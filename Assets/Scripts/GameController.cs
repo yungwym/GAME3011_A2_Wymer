@@ -6,51 +6,88 @@ using TMPro;
 
 public class GameController : MonoBehaviour
 {
-
-   
-
-
-    //State Machine Variables 
-    public StateMachine stateMachine;
-    public StateId initialState;
-
     //Ui Variables 
-    public Canvas startCanvas;
-    public Canvas selectCanvas;
-    public Canvas gameCanvas;
-    public Canvas endCanvas;
+    public GameObject selectCanvas;
+    public GameObject startCanvas;
+    public GameObject gameCanvas;
+    public GameObject endCanvas;
+
+    public GameObject lockObject;
+   
+    private Lock lockController;
+
+    private bool gameReady = false;
 
     private void Start()
     {
         Debug.Log("GameController Start");
 
-        //State Machine Setup
-        stateMachine = new StateMachine(this);
-        stateMachine.RegisterState(new BeginState());
-        stateMachine.RegisterState(new GameState());
-        stateMachine.RegisterState(new EndState());
-        stateMachine.ChangeState(initialState);
+        
+        lockController = lockObject.GetComponent<Lock>();
+
+        ShowDifficultyUI();
     }
 
     // Update is called once per frame
     void Update()
     {
-        stateMachine.Update();
+        if (Input.GetKeyDown(KeyCode.S) && gameReady)
+        {
+            Debug.Log("Game Started");
+            StartGame();
+        }
     }
+
+    void ShowDifficultyUI()
+    {
+        selectCanvas.SetActive(true);
+        startCanvas.SetActive(false);
+        gameCanvas.SetActive(false);
+        endCanvas.SetActive(false);
+        lockObject.SetActive(false);
+    }
+
+   void ShowStartUI()
+    {
+        selectCanvas.SetActive(false);
+        startCanvas.SetActive(true);
+        gameCanvas.SetActive(false);
+        endCanvas.SetActive(false);
+
+        gameReady = true;
+    }
+
+    void StartGame()
+    {
+        selectCanvas.SetActive(false);
+        startCanvas.SetActive(false);
+        gameCanvas.SetActive(true);
+        endCanvas.SetActive(false);
+        lockObject.SetActive(true);
+
+        lockController.SetupLock();
+    }
+
 
     public void OnEasyClicked()
     {
-        
+        Debug.Log("Lock Set to Easy");
+        lockController.SetDifficultyToEasy();
+        ShowStartUI();
     }
 
     public void OnMediumClicked()
     {
-       
+        Debug.Log("Lock Set to Medium");
+        lockController.SetDifficultyToMedium();
+        ShowStartUI();
     }
 
     public void OnHardClicked()
     {
-        
+        Debug.Log("Lock Set to Hard");
+        lockController.SetDifficultyToHard();
+        ShowStartUI();
     }
 
 
