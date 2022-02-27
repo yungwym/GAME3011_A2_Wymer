@@ -27,11 +27,15 @@ public class Lock : MonoBehaviour
 
     public int lockpickChances;
 
-
     public GameObject activeArea;
     public GameObject playerPin;
 
     public float playerPinRotationSpeed = 5.0f;
+    public float activeAreaRotationSpeed = 5.0f;
+
+    public float gamePinRotationSpeed = 5.0f;
+
+    public float timeRemaining;
 
     public Transform pivotPoint;
 
@@ -41,6 +45,10 @@ public class Lock : MonoBehaviour
     public List<GameObject> gamePins;
 
     private bool gameOver = false;
+    public bool gameWin = false;
+    public bool gameLose = false;
+
+    public AudioManager audioManager;
 
     private int index = 0;
 
@@ -48,11 +56,21 @@ public class Lock : MonoBehaviour
     void Start()
     {
         //InitialLockSetup();
+
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (timeRemaining > 0)
+        {
+            timeRemaining -= Time.deltaTime;
+        }
+        else
+        {
+            StartCoroutine(FailedLockPick());
+        }
+
        
         if (Input.GetKey(KeyCode.LeftArrow))
         {
@@ -63,48 +81,69 @@ public class Lock : MonoBehaviour
             RotateActiveAreaRight();
         }
 
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.Space) && lockpickChances > 0)
         {
             PinPicked();
         }
 
 
-        if (!gameOver)
+        if (!gameOver && index <= numOfTiers)
         {
             playerPins[index].transform.RotateAround(pivotPoint.position, new Vector3(0, 0, 1), playerPinRotationSpeed * Time.deltaTime);
+            gamePins[index].transform.RotateAround(pivotPoint.position, new Vector3(0, 0, 1), gamePinRotationSpeed * Time.deltaTime);
         }
        
     }
 
     public void RotateActiveAreaLeft()
     {
-        if (!gameOver)
+        if (!gameOver && index <= numOfTiers)
         {
-            activeAreas[index].transform.RotateAround(pivotPoint.position, new Vector3(0, 0, 1), playerPinRotationSpeed * Time.deltaTime);
+            activeAreas[index].transform.RotateAround(pivotPoint.position, new Vector3(0, 0, 1), activeAreaRotationSpeed * Time.deltaTime);
         }
     }
 
     public void RotateActiveAreaRight()
     {
-        if (!gameOver)
+        if (!gameOver && index <= numOfTiers)
         {
-            activeAreas[index].transform.RotateAround(pivotPoint.position, new Vector3(0, 0, -1), playerPinRotationSpeed * Time.deltaTime);
+            activeAreas[index].transform.RotateAround(pivotPoint.position, new Vector3(0, 0, -1), activeAreaRotationSpeed * Time.deltaTime);
         }
     }
 
     public void SetGamePinRotation()
     {
-        float randomRotation = Random.Range(-90, 180);
+        int rand = Random.Range(0, 2);
 
-        gamePins[index].transform.RotateAround(pivotPoint.position, new Vector3(0, 0, 1), randomRotation);
+        switch (rand)
+        {
+            case 0:
+                Debug.Log("0");
+
+                playerPinRotationSpeed = -200.0f;
+                gamePinRotationSpeed = 100.0f;
+
+                break;
+            case 1:
+
+                Debug.Log("1");
+
+                playerPinRotationSpeed = 200.0f;
+                gamePinRotationSpeed = -100.0f;
+
+                break;
+
+            default:
+                break;
+        }
     }
-
-
 
 
     public void PinPicked()
     {
         if (activeAreas[index].GetComponent<ActiveAreaController>().isCollidingWithGamePin &&
+            activeAreas[index].GetComponent<ActiveAreaController>().isCollidingWithPlayerPin &&
+            playerPins[index].GetComponent<PlayerPinController>().isColldingWithActiveArea &&
             playerPins[index].GetComponent<PlayerPinController>().isColldingWithGamePin)
         {
             Debug.Log("PinPicked");
@@ -113,10 +152,9 @@ public class Lock : MonoBehaviour
 
             if (index <= numOfTiers)
             {
-
+                audioManager.Play("Select");
 
                 Debug.Log(index);
-
 
                 loops[index].SetActive(true);
                 activeAreas[index].SetActive(true);
@@ -128,40 +166,71 @@ public class Lock : MonoBehaviour
 
                 SetGamePinRotation();
             }
+            else if (index > numOfTiers)
+            {
+                audioManager.Play("Select");
 
+                StartCoroutine(SuccessfulLockPick());
+            }
         }
-
-        if (!activeAreas[index].GetComponent<ActiveAreaController>().isCollidingWithGamePin ||
+        else if (!activeAreas[index].GetComponent<ActiveAreaController>().isCollidingWithGamePin ||
              !playerPins[index].GetComponent<PlayerPinController>().isColldingWithGamePin)
         {
             Debug.Log("Missed Game Pin");
 
             lockpickChances -= 1;
 
+            audioManager.Play("Error");
+
             if (lockpickChances == 0)
             {
-                Debug.Log("Game Over");
+                StartCoroutine(FailedLockPick());
             }
         }
+    }
 
+    IEnumerator SuccessfulLockPick()
+    {  
+        yield return new WaitForSeconds(1.0f);
+        Debug.Log("Lock Complete");
 
-            if (index > numOfTiers)
-            {
-                Debug.Log("Lock Complete");
-                gameOver = true;
-            }
+        for (int i = 0; i <= numOfTiers; i++)
+        {
+            loops[i].SetActive(false);
+            activeAreas[i].SetActive(false);
+            playerPins[i].SetActive(false);
+            gamePins[i].SetActive(false);
+        }
 
+        gameOver = true;
+        gameWin = true;
 
+    }
+
+    IEnumerator FailedLockPick()
+    {
+        yield return new WaitForSeconds(1.0f);
+
+        Debug.Log("Game Over");
+
+        for (int i = 0; i < numOfTiers; i++)
+        {
+            loops[i].SetActive(false);
+            activeAreas[i].SetActive(false);
+            playerPins[i].SetActive(false);
+            gamePins[i].SetActive(false);
+        }
+
+        gameLose = true;
 
     }
     
-
-
     public void SetDifficultyToEasy()
     {
         lockType = LockType.EASY;
         numOfTiers = 1;
         lockpickChances = 5;
+        timeRemaining = 30.0f;
         pinColor = easyColor;
         activeAreaColor = easyColor;
         activeAreaColor.a = 0.5f;
@@ -172,6 +241,7 @@ public class Lock : MonoBehaviour
         lockType = LockType.MEDIUM;
         numOfTiers = 2;
         lockpickChances = 4;
+        timeRemaining = 20.0f;
         pinColor = mediumColor;
         activeAreaColor = mediumColor;
         activeAreaColor.a = 0.5f;
@@ -182,6 +252,7 @@ public class Lock : MonoBehaviour
         lockType = LockType.HARD;
         numOfTiers = 3;
         lockpickChances = 3;
+        timeRemaining = 15.0f;
         pinColor = hardColor;
         activeAreaColor = hardColor;
         activeAreaColor.a = 0.5f;
@@ -205,5 +276,13 @@ public class Lock : MonoBehaviour
         }
     }
 
+    public LockType GetLockDifficulty()
+    {
+        return lockType;
+    }
 
+    public int GetRemainingAttempts()
+    {
+        return lockpickChances;
+    }
 }

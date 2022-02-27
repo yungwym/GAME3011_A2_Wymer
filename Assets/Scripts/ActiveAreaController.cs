@@ -5,13 +5,19 @@ using UnityEngine;
 public class ActiveAreaController : MonoBehaviour
 {
     public bool isCollidingWithGamePin = false;
+    public bool isCollidingWithPlayerPin = false;
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.CompareTag("GamePin"))
         {
-            Debug.Log("Colliding With GamePin");
+            Debug.Log("Active Area Colliding With GamePin");
             isCollidingWithGamePin = true;
+        }
+
+        if (collision.CompareTag("PlayerPin"))
+        {
+            isCollidingWithPlayerPin = true;
         }
     }
 
@@ -19,8 +25,13 @@ public class ActiveAreaController : MonoBehaviour
     {
         if (collision.CompareTag("GamePin"))
         {
-            Debug.Log("Not Colliding With GamePin");
+            Debug.Log("Active Area Not Colliding With GamePin");
             isCollidingWithGamePin = false;
+        }
+
+        if (collision.CompareTag("PlayerPin"))
+        {
+            isCollidingWithPlayerPin = false;
         }
     }
 }

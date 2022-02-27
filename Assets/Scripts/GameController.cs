@@ -10,18 +10,30 @@ public class GameController : MonoBehaviour
     public GameObject selectCanvas;
     public GameObject startCanvas;
     public GameObject gameCanvas;
-    public GameObject endCanvas;
+    public GameObject winCanvas;
+    public GameObject loseCanvas;
+
+    public TextMeshProUGUI difficultyText;
+    public TextMeshProUGUI lockPickAttemptsText;
+
+    public TextMeshProUGUI timeNumText;
+
 
     public GameObject lockObject;
+
+    public GameObject lockParentObject;
    
     private Lock lockController;
 
     private bool gameReady = false;
+    private bool gameInProgress;
+
 
     private void Start()
     {
         Debug.Log("GameController Start");
 
+        gameInProgress = false;
         
         lockController = lockObject.GetComponent<Lock>();
 
@@ -31,11 +43,26 @@ public class GameController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.S) && gameReady)
+        if (lockController.gameWin)
+        {
+            ShowWinUI();
+        }
+        else if (lockController.gameLose)
+        {
+            ShowLoseUI();
+        }
+
+        if (Input.GetKeyDown(KeyCode.S) && gameReady && !gameInProgress)
         {
             Debug.Log("Game Started");
+            gameInProgress = true;
             StartGame();
         }
+
+        SetDifficultyAndAttemptsText();
+
+        int time = (int)lockController.timeRemaining;
+        timeNumText.text = time.ToString();
     }
 
     void ShowDifficultyUI()
@@ -43,7 +70,8 @@ public class GameController : MonoBehaviour
         selectCanvas.SetActive(true);
         startCanvas.SetActive(false);
         gameCanvas.SetActive(false);
-        endCanvas.SetActive(false);
+        winCanvas.SetActive(false);
+        loseCanvas.SetActive(false);
         lockObject.SetActive(false);
     }
 
@@ -52,9 +80,11 @@ public class GameController : MonoBehaviour
         selectCanvas.SetActive(false);
         startCanvas.SetActive(true);
         gameCanvas.SetActive(false);
-        endCanvas.SetActive(false);
-
+        winCanvas.SetActive(false);
+        loseCanvas.SetActive(false);
         gameReady = true;
+
+        SetDifficultyAndAttemptsText();
     }
 
     void StartGame()
@@ -62,11 +92,38 @@ public class GameController : MonoBehaviour
         selectCanvas.SetActive(false);
         startCanvas.SetActive(false);
         gameCanvas.SetActive(true);
-        endCanvas.SetActive(false);
+        winCanvas.SetActive(false);
+        loseCanvas.SetActive(false);
         lockObject.SetActive(true);
 
         lockController.SetupLock();
     }
+
+    void ShowWinUI()
+    {
+        selectCanvas.SetActive(false);
+        startCanvas.SetActive(false);
+        gameCanvas.SetActive(false);
+        winCanvas.SetActive(true);
+        loseCanvas.SetActive(false);
+        lockObject.SetActive(false);
+
+        lockParentObject.SetActive(false);
+
+    }
+
+    void ShowLoseUI()
+    {
+        selectCanvas.SetActive(false);
+        startCanvas.SetActive(false);
+        gameCanvas.SetActive(false);
+        winCanvas.SetActive(false);
+        loseCanvas.SetActive(true);
+        lockObject.SetActive(false);
+
+        lockParentObject.SetActive(false);
+    }
+
 
 
     public void OnEasyClicked()
@@ -91,5 +148,26 @@ public class GameController : MonoBehaviour
     }
 
 
+    public void SetDifficultyAndAttemptsText()
+    {
+        switch (lockController.GetLockDifficulty())
+        {
+            case LockType.NONE:
+                difficultyText.text = "Difficulty: None";
+                break;
+            case LockType.EASY:
+                difficultyText.text = "Difficulty: Easy";
+                break;
+            case LockType.MEDIUM:
+                difficultyText.text = "Difficulty: Medium";
+                break;
+            case LockType.HARD:
+                difficultyText.text = "Difficulty: Hard";
+                break;
+            default:
+                break;
+        }
+        lockPickAttemptsText.text = lockController.GetRemainingAttempts().ToString();
+    }
 
 }
